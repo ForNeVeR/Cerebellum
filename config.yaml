@@ -1,0 +1,5 @@
+﻿---
+adapters:
+    - type: socket
+      port: 666
+          
