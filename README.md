@@ -3,7 +3,8 @@
 
 About
 =====
-Cerebellum is simple server for sharing various kinds of data between various clients. Main focus made on to-do lists integrated with emacs org-mode files.
+Cerebellum is simple server for sharing various kinds of data between various
+clients. Main focus made on to-do lists integrated with emacs org-mode files.
 
 License
 =======
@@ -31,5 +32,10 @@ THE SOFTWARE.
 
 Usage
 =====
-
 Still nothing to use.
+
+Concepts
+========
+Main program concept is 'adapter'. Adapter is an Erlang-written subsystem for
+operating with environment. Adapters may be written for network socket, file
+system, database.
