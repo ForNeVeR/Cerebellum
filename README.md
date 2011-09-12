@@ -39,7 +39,23 @@ To build current version of source code, execute following commands:
 
 Usage
 =====
-Still nothing to use.
+### Starting server
+
+First, run Erlang console from the ebin directory:
+
+    $ cd ebin && erl
+
+Then start cerebellum application:
+
+    1> cerebellum:start().
+
+### Stopping server
+
+Use the following function call:
+
+    2> cerebellum:stop().
+
+This will stop the whole application.
 
 Concepts
 ========

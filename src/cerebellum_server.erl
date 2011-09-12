@@ -18,7 +18,7 @@
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
 -module(cerebellum_server).
--export([start_link/1, stop/1]).
+-export([start_link/0, stop/1]).
 
 -behavior(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
@@ -28,9 +28,9 @@
 
 %% == Public functions ==
 
-start_link(Port) ->
-    ?LOG("cerebellum_server:start_link~n"),
-    gen_server:start_link(?MODULE, [Port], []).
+start_link() ->
+    ?LOG("cerebellum_server:start_link()~n"),
+    gen_server:start_link(?MODULE, [], []).
 
 stop(PID) ->
     ?LOG("cerebellum_server:stop~n)"),
@@ -38,7 +38,7 @@ stop(PID) ->
 
 %% == gen_server behavior ==
 
-init(Args=[Port]) ->
+init(Args) ->
     ?LOG("cerebellum_server:init(~p)~n", [Args]),
     State = {},
     {ok, State}.
