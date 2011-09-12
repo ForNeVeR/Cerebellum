@@ -21,6 +21,8 @@
 -export([start_link/1, stop/1]).
 
 -behavior(gen_server).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
+	 code_change/3]).
 
 -include("log.hrl").
 
@@ -31,19 +33,20 @@ start_link(Port) ->
     gen_server:start_link(?MODULE, [Port], []).
 
 stop(PID) ->
-    ?LOG("cerebellum_server:stop~n)",
+    ?LOG("cerebellum_server:stop~n)"),
     gen_server:call(PID, stop).
 
-%% === gen_server behavior ===
+%% == gen_server behavior ==
 
 init(Args=[Port]) ->
     ?LOG("cerebellum_server:init(~p)~n", [Args]),
+    State = {},
     {ok, State}.
 
 handle_call(stop, From, State) ->
     ?LOG("cerebellum_server:handle_call(stop, ~p, ~p)~n", [From, State]),
     {stop, normal, ok, State};
-handle_call(Request, _From, State) ->
+handle_call(Request, From, State) ->
     ?LOG("cerebellum_server:handle_call(~p, ~p, ~p)~n", [Request, From, State]),
     {noreply, State}.
 
@@ -61,5 +64,11 @@ terminate(Reason, State) ->
     ok.
 
 code_change(OldVsn, State, Extra) ->
-    ?LOG("cerebellum_server:code_change(~p, ~p)~n", [OldVsn, State, Extra]),
+    ?LOG("cerebellum_server:code_change(~p, ~p, ~p)~n", [OldVsn, State, Extra]),
     {ok, State}.
+
+%% == Private functions ==
+
+handle_message(State, Request) ->
+    ?LOG("cerebellum_server:handle_message(~p, ~p)~n", [State, Request]),
+    State.
