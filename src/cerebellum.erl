@@ -35,9 +35,10 @@ stop() ->
 
 %% === application behavior ===
 
-start(normal, Args=[Port]) ->
+start(normal, Args) ->
     ?LOG("cerebellum:start(normal, ~p)~n", [Args]),
-    {ok, PID} = cerebellum_server:start_link(Port),
+    %% TODO: Read config file, start adapters.
+    {ok, PID} = cerebellum_server:start_link(),
     State = [PID],
     {ok, PID, State}.
 

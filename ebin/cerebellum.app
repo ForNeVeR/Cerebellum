@@ -19,6 +19,7 @@
 %% THE SOFTWARE.
 {application, cerebellum,
  [{description, "cerebellum server"},
-  {modules, [cerebellum]},
-  {mod, {cerebellum, [666]}}
+  {modules, [cerebellum,
+	     cerebellum_server]},
+  {mod, {cerebellum, []}}
  ]}.
