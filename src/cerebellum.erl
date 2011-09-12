@@ -46,15 +46,14 @@ start_phase(_, _) ->
     {error, not_implemented}.
 
 prep_stop(State=[PID]) ->
-    ?LOG("cerebellum:stop(~p)~n", [State]),
+    ?LOG("cerebellum:prep_stop(~p)~n", [State]),
     ok = cerebellum_server:stop(PID),
-    State = [],
     State.
 
-stop(_) ->
-    ?LOG("cerebellum:stop~n"),
+stop(State) ->
+    ?LOG("cerebellum:stop(~p)~n", [State]),
     ok.
 
-config_change(_, _, _) ->
-    ?LOG("cerebellum:config_change~n"),
+config_change(Changed, New, Removed) ->
+    ?LOG("cerebellum:config_change(~p, ~p, ~p)~n", [Changed, New, Removed]),
     ok. 

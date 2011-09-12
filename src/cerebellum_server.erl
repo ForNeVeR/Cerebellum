@@ -33,14 +33,14 @@ start_link() ->
     gen_server:start_link(?MODULE, [], []).
 
 stop(PID) ->
-    ?LOG("cerebellum_server:stop~n)"),
+    ?LOG("cerebellum_server:stop(~p)~n", [PID]),
     gen_server:call(PID, stop).
 
 %% == gen_server behavior ==
 
 init(Args) ->
     ?LOG("cerebellum_server:init(~p)~n", [Args]),
-    State = {},
+    State = [],
     {ok, State}.
 
 handle_call(stop, From, State) ->
