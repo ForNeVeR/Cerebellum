@@ -1,6 +1,6 @@
 -module(yaml).
 -author("Oliver Mason").
--export([parse/1]).
+-export([parse/1, load_file/1]).
 
 % parse a yaml file, represented as a list of lines.
 % returns: a data structure as stored in the yaml file.
