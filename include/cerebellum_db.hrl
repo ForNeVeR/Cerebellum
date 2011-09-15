@@ -1,0 +1,5 @@
+-record(user, {user_id,name,password_hash}).
+-record(task, {task_id,user_id,name,mode,state}).
+-record(friend, {user_id, friend_id}).
+-record(session, {session_id,user_id}).
+-record(sequence, {name, next}).
