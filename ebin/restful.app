@@ -17,9 +17,11 @@
 %% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
-
--record(user, {user_id,name,password_hash}).
--record(task, {task_id,user_id,name,mode,state}).
--record(friend, {user_id, friend_id}).
--record(session, {session_id,user_id}).
--record(sequence, {name, next}).
+{application, cerebellum-restful,
+ [{description, "cerebellum restful service"},
+  {modules, [restful,
+	     restful_logic,
+	     cerebellum_db,
+	     util]},
+  {mod, {restful, []}}
+ ]}.
