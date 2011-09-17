@@ -24,5 +24,6 @@
 
 %% === Public functions ===
 
-read_config(FileName) ->
-    yaml:parse(yaml:load_file(FileName)).
+read(FileName) ->
+    {ok, Data} = file:read_file(FileName),
+    beanstalk_yaml:parse(Data).
