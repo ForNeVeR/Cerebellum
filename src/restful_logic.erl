@@ -20,7 +20,7 @@
 
 -module(restful_logic).
 -export([process_request/1]).
--include_lib("xmerl/include/xmerl.hrl").
+-include("../include/cerebellum_db.hrl").
 
 get_tasks(Session,User) ->
     string:concat(io_lib:format("HTTP/1.1 200 OK~nContent-Length: 100500~nContent-Type: text/xml~nConnection: close~n~n",[]),
@@ -52,24 +52,22 @@ post_request({{http_request, 'POST',{abs_path, "/sessions/"},Version},Headers,Da
     io_lib:format("HTTP/1.1 501 Not Implemented~n~n");
 post_request({{http_request, 'POST',{abs_path, Path},Version},Headers,Data}) -> %%new task
     ["",User,Parent] = re:split(Path,"/",[{return,list}]),
-    {XMLDocument, _} = xmerl_scan:string(Data),
-    Attributes = XMLDocument#xmlElement.attributes,
-    Mode = hd(lists:filter(fun(A) -> A#xmlAttribute.name == mode end, Attributes)),
-    State = hd(lists:filter(fun(A) -> A#xmlAttribute.name == state end, Attributes)),
-    Name = hd(lists:filter(fun(A) -> A#xmlAttribute.name == name end, Attributes)),
+    Task = parser:task_xml(Data),
+    TaskID = cerebellum_db:next_id(task),
     case
 	catch cerebellum_db:write_task(
-		cerebellum_db:next_id(task),
+		TaskID,
 		cerebellum_db:user_id(User),
-		Name#xmlAttribute.value,
-		Mode#xmlAttribute.value,
-		State#xmlAttribute.value)
+		Task#task.name,
+		Task#task.mode,
+		Task#task.state)
     of
 	{atomic, ok} -> %%no error
-	    ResponseData = io_lib:format("<task id=\"1\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
-					 [util:utf8(Mode#xmlAttribute.value),
-					  util:utf8(State#xmlAttribute.value),
-					  util:utf8(Name#xmlAttribute.value)]),
+	    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
+					 [TaskID,
+					  util:utf8(Task#task.mode),
+					  util:utf8(Task#task.state),
+					  util:utf8(Task#task.name)]),
 	    string:concat(io_lib:format(
 			    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
 			    [length(ResponseData)*4]),
