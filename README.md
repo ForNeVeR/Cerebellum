@@ -30,6 +30,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
+Cerebellum uses components of erlang-beanstalk by Tim Fletcher. See file
+License-beanstalk.txt for licensing info.
+
 Building
 ========
 To build current version of source code, execute following commands:
