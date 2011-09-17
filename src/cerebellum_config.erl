@@ -18,7 +18,7 @@
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
 -module(cerebellum_config).
--export([read_config/1]).
+-export([read/1]).
 
 -include("log.hrl").
 

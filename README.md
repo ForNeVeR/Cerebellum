@@ -60,6 +60,12 @@ Use the following function call:
 
 This will stop the whole application.
 
+Configuration
+=============
+Server configuration is stored in a file named `config.yaml`. It is simple YAML
+file storing list of module names. Every included module will be started with
+its default parameters.
+
 Concepts
 ========
 Main program concept is 'adapter'. Adapter is an Erlang-written subsystem for

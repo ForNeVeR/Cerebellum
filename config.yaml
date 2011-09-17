@@ -1,5 +1,2 @@
-﻿---
-adapters:
-    - type: socket
-      port: 666
-          
+---
+- restful
