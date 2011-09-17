@@ -37,8 +37,10 @@ stop() ->
 
 start(normal, Args) ->
     ?LOG("cerebellum:start(normal, ~p)~n", [Args]),
-    %% TODO: Read config file, start adapters.
     {ok, PID} = cerebellum_server:start_link(),
+    Config = cerebellum_config:read("../config.yaml"),
+    Adapters = cerebellum_config:adapters(Config),
+    lists:map(fun (Adapter) -> cerebellum_server:start_adapter(PID, Adapter) end, Adapters),
     State = [PID],
     {ok, PID, State}.
 
@@ -56,4 +58,4 @@ stop(State) ->
 
 config_change(Changed, New, Removed) ->
     ?LOG("cerebellum:config_change(~p, ~p, ~p)~n", [Changed, New, Removed]),
-    ok. 
+    ok.
