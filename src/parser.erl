@@ -23,7 +23,7 @@
 %% or whatever and call appropriate functions.
 
 -module(parser).
--export([task_xml/1, task_yaml/1]).
+-export([task_xml/1, task_yaml/1, auth_xml/1]).
 -include("../include/cerebellum_db.hrl").
 -include("../include/log.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
@@ -64,6 +64,38 @@ task_xml(XMLString)->
 		    end;
 		true -> %% that's not task, that's something else
 		    ?LOG("error: parser: expected: task; received: ~p~n",[XMLElement#xmlElement.name]),
+		    exit({error,badarg})
+	    end
+    end.
+%% auth xml representation:
+%% <auth>
+%%     <username>Foo</username>
+%%     <password>bar</password>
+%% </auth>
+auth_xml(XMLString)->
+    case catch xmerl_scan:string(XMLString) of
+	{fatal, {Error,_}} -> %% Something is terribly wrong, we can't continue.
+	    ?LOG("error: parser: ~p on:~n~p~n",[Error,XMLString]),
+	    exit({error,badarg});
+	{XMLElement,Rest} -> %% Everything shiny so far...
+	    if 
+		XMLElement#xmlElement.name == auth -> %% and we actually got authentication request
+		    %% warn if not all string was parsed
+		    if not(Rest == []) ->
+			    ?LOG("warning: parser: unparsed remainder: ~p~n",[Rest]);
+		       true -> ok
+		    end,
+		    #xmlElement{content = [#xmlText{value = Username}]}
+				= hd(lists:filter(
+				       fun(E) -> E#xmlElement.name == username end,
+				       XMLElement#xmlElement.content)),
+		    #xmlElement{content = [#xmlText{value = Password}]}
+			= hd(lists:filter(
+			       fun(E) -> E#xmlElement.name == password end,
+			       XMLElement#xmlElement.content)),
+		    {ok,Username,Password};
+		true -> %% that's not auth request, that's something else
+		    ?LOG("error: parser: expected: auth; received: ~p~n",[XMLElement#xmlElement.name]),
 		    exit({error,badarg})
 	    end
     end.
