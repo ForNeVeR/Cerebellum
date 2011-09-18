@@ -23,12 +23,12 @@
 %% or whatever and call appropriate functions.
 
 -module(parser).
--export([task_xml/1]).
+-export([task_xml/1, task_yaml/1]).
 -include("../include/cerebellum_db.hrl").
 -include("../include/log.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
-%% task xml representation^
+%% task xml representation:
 %% <task [id="0"] mode="mode" state="state" name="Task" />
 %% 'id' attribute may be omitted if the task is not in db yet
 %% or it can be inferred from other parts of request
@@ -66,4 +66,35 @@ task_xml(XMLString)->
 		    ?LOG("error: parser: expected: task; received: ~p~n",[XMLElement#xmlElement.name]),
 		    exit({error,badarg})
 	    end
+    end.
+
+%% task yaml representation:
+%% ---
+%% task: <id#> //id value can be omitted
+%% mode: [public,private,etc]
+%% state: [todo,done,etc]
+%% name: Task name
+task_yaml(YAML) ->
+    case catch beanstalk_yaml:parse(list_to_binary(YAML)) of
+	{'EXIT',_} -> %% error in yaml parser
+	    ?LOG("error: parser: malformed YAML:~n~p~n",[YAML]),
+	    exit({error,badarg});
+	[{"task",[]},
+	 {"mode",Mode},
+	 {"state",State},
+	 {"name",Name}] -> % everything shiny, omitted id case
+	    #task{name = Name,
+		  mode = Mode,
+		  state = State};
+	[{"task",ID},
+	 {"mode",Mode},
+	 {"state",State},
+	 {"name",Name}] -> % everything shiny, included id case
+	    #task{task_id = element(1,string:to_integer(ID)),
+		  name = Name,
+		  mode = Mode,
+		  state = State};
+	[Head|_] -> %% that's yaml, but not task
+	    ?LOG("error: parser: expected: task; received: ~p~n",[Head]),
+	    exit({error,badarg})
     end.
