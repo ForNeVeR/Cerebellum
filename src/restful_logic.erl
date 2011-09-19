@@ -49,14 +49,15 @@ post_request({{http_request, 'POST',{abs_path, "/"},Version},Headers,Data}) -> %
     io_lib:format("HTTP/1.1 501 Not Implemented~n~n");
 post_request({{http_request, 'POST',{abs_path, "/sessions/"},Version},Headers,Data}) -> %%login request
     case catch parser:auth_xml(Data) of
-	{ok,Username,Password} ->
+	{ok,Username,Password} -> %% parsed data
 	    case catch cerebellum_db:create_session(Username,Password) of
-		{session,SessionID,UserID} ->
+		{session,SessionID,UserID} -> %% auth successful
 		    io_lib:format("HTTP/1.1 200 OK~nContent-Length: 35~nContent-Type: text/xml~nConnection: close
 Set-Cookie: Session=~s~n~n<session>~s</session>",
 				  [SessionID,SessionID]);
-		{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n")
-	    end
+		{'EXIT',_} -> io_lib:format("HTTP/1.1 403 Forbidden~n~n") %%auth failed
+	    end;
+	{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
     end;
 post_request({{http_request, 'POST',{abs_path, Path},Version},Headers,Data}) -> %%new task
     ["",User,Parent] = re:split(Path,"/",[{return,list}]),
