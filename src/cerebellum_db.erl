@@ -42,10 +42,14 @@ init_schema() ->
 			[{attributes, record_info(fields,sequence)}]).
 
 user_id(UserName)-> %%returns id# of user with given name
-    {atomic,User} =
-	mnesia:transaction(fun() ->
-				   qlc:e(qlc:q([U || U <-mnesia:table(user), U#user.name == UserName])) end),
-    (hd(User))#user.user_id.
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([U || U <-mnesia:table(user), U#user.name == UserName]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[User]} -> 
+		 User#user.user_id
+	 end.
 
 next_id(Table) -> %% returns next free id for given table
     {atomic, ID} = mnesia:transaction(
@@ -115,4 +119,3 @@ testdata()->
     write_task(next_id(task),TestUserID,"Вкурить эрланга","public","done"),
     write_task(next_id(task),TestUserID,"Показать микелю протокол","protected","todo"),
     write_task(next_id(task),TestUserID,"Забухать","private","todo").
-    
