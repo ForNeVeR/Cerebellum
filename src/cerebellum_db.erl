@@ -20,7 +20,7 @@
 
 -module(cerebellum_db).
 -export([start/0, init_schema/0, testdata/0, fetch_tasks_xml/2, write_user/3, write_task/5,
-	next_id/1, user_id/1, create_session/2]).
+	next_id/1, user_id/1, create_session/2, fetch_session/1]).
 -include_lib("stdlib/include/qlc.hrl").
 -include("../include/cerebellum_db.hrl").
 
@@ -136,4 +136,14 @@ create_session(UserName,Password) ->
 					   mnesia:write(Session)
 				   end),
 		 Session    
+	 end.
+
+fetch_session(SessionID)-> %%returns id# of user with given name
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([S || S <-mnesia:table(session), S#session.session_id == SessionID]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[Session]} -> 
+		 Session
 	 end.
