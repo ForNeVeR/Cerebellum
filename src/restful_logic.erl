@@ -35,7 +35,19 @@ get_request({{http_request, 'GET',{abs_path, "/sessions/"},Version},Headers,[]})
     io_lib:format("HTTP/1.1 403 Forbidden~n~n");
 get_request({{http_request, 'GET',{abs_path, Path},Version},Headers,[]}) ->
     ["",User,""] = re:split(Path,"/",[{return,list}]),
-    get_tasks(foo,User);
+    [Cookie] = lists:filter(fun(Header) ->
+				    {http_header,_,HttpField,_,_} = Header,
+				    HttpField == "Cookie"
+			    end,
+			    Headers),
+    {http_header,_,_,_,CookieValue} = Cookie,
+    ["Session=",SessionID] = re:split(CookieValue,"=",[{return,list}]),
+    case catch cerebellum_db:fetch_session(SessionID) of
+	{'EXIT',_} -> %% Session not found
+	    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+	Session -> %% Session found
+	    get_tasks(Session,User)
+    end;
 get_request({{http_request, 'GET',{abs_path, Path},Version},Headers,Data}) ->
     %% this should never ever be matched. but, just in case...
     io_lib:format("HTTP/1.1 500 Internal Server Error~n~n").
