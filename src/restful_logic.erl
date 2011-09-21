@@ -23,8 +23,14 @@
 -include("../include/cerebellum_db.hrl").
 
 get_tasks(Session,User) ->
-    string:concat(io_lib:format("HTTP/1.1 200 OK~nContent-Length: 100500~nContent-Type: text/xml~nConnection: close~n~n",[]),
-		  io_lib:format("<tasks user=\"~s\">~n~s</tasks>",[User,cerebellum_db:fetch_tasks_xml(User,[])])).
+    case Session#session.user_id == cerebellum_db:user_id(User) of
+	true ->
+	    string:concat(io_lib:format("HTTP/1.1 200 OK~nContent-Length: 100500~nContent-Type: text/xml~nConnection: close~n~n",[]),
+			  io_lib:format("<tasks user=\"~s\">~n~s</tasks>",[User,cerebellum_db:fetch_tasks_xml(User,["public","protected","private"])]));
+	false ->
+	    string:concat(io_lib:format("HTTP/1.1 200 OK~nContent-Length: 100500~nContent-Type: text/xml~nConnection: close~n~n",[]),
+			  io_lib:format("<tasks user=\"~s\">~n~s</tasks>",[User,cerebellum_db:fetch_tasks_xml(User,["public"])]))
+    end.
     
 get_request({{http_request, 'GET',{abs_path, "/"},Version},Headers,[]}) ->
     %% don't know what this should return, probably something
