@@ -21,6 +21,7 @@
  [{description, "cerebellum restful service"},
   {modules, [restful,
 	     restful_logic,
+	     parser,
 	     cerebellum_db,
 	     util]},
   {mod, {restful, []}}
