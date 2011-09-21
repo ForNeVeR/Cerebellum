@@ -63,6 +63,12 @@ get_request({{http_request, 'GET',{abs_path, Path},Version},Headers,Data}) ->
     %% this should never ever be matched. but, just in case...
     io_lib:format("HTTP/1.1 500 Internal Server Error~n~n").
 
+put_request({{http_request, 'PUT',{abs_path, "/"},Version},Headers,Data}) ->
+    %% NOTE We don't have any user info yet, so this is forbidden
+    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+put_request({{http_request, 'PUT',{abs_path, "/sessions/"},Version},Headers,Data}) ->
+    %% NOTE obv, we do not want someone to replace all sessions
+    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
 put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
     %% TODO Implement this
     io_lib:format("HTTP/1.1 501 Not Implemented~n~n").
