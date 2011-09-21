@@ -68,8 +68,17 @@ put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
     io_lib:format("HTTP/1.1 501 Not Implemented~n~n").
 
 post_request({{http_request, 'POST',{abs_path, "/"},Version},Headers,Data}) -> %%add new user
-    %% TODO Implement this
-    io_lib:format("HTTP/1.1 501 Not Implemented~n~n");
+    %% Same data syntax as auth
+    case catch parser:auth_xml(Data) of
+	{ok,Username,Password} -> %% parsed data
+	    case catch cerebellum_db:write_user(cerebellum_db:next_id(user),Username,Password) of
+		{atomic,ok} -> %% successful
+		    io_lib:format("HTTP/1.1 200 OK~n~n");
+		{'EXIT',_} -> %% failed
+		    io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% that's most probable cause of write_user failure 
+	    end;
+	{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
+    end;
 post_request({{http_request, 'POST',{abs_path, "/sessions/"},Version},Headers,Data}) -> %%login request
     case catch parser:auth_xml(Data) of
 	{ok,Username,Password} -> %% parsed data
