@@ -70,8 +70,12 @@ put_request({{http_request, 'PUT',{abs_path, "/sessions/"},Version},Headers,Data
     %% NOTE obv, we do not want someone to replace all sessions
     io_lib:format("HTTP/1.1 403 Forbidden~n~n");
 put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
-    %% TODO Implement this
-    io_lib:format("HTTP/1.1 501 Not Implemented~n~n").
+    ["",User,TaskID] = re:split(Path,"/",[{return,list}]),
+    case catch parser:task_xml(Data) of
+	{task,_,UserID,Name,Mode,State} -> %% data parsed ok
+	    cerebellum_db:write_task(TaskID,UserID,Name,Mode,State);
+	{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
+    end.
 
 post_request({{http_request, 'POST',{abs_path, "/"},Version},Headers,Data}) -> %%add new user
     %% Same data syntax as auth
