@@ -82,7 +82,16 @@ put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
 		true ->
 		    case catch parser:task_xml(Data) of
 			{task,_,_,Name,Mode,State} -> %% data parsed ok
-			    cerebellum_db:write_task(TaskID,Session#session.user_id,Name,Mode,State);
+			    cerebellum_db:write_task(TaskID,Session#session.user_id,Name,Mode,State),
+			    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
+							 [TaskID,
+							  Mode,
+							  State,
+							  Name]),
+			    string:concat(io_lib:format(
+					    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
+					    [length(ResponseData)*4]),
+					  ResponseData);
 			{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
 		    end;
 		false ->
