@@ -31,7 +31,15 @@ get_tasks(Session,User) ->
 	    string:concat(io_lib:format("HTTP/1.1 200 OK~nContent-Length: 100500~nContent-Type: text/xml~nConnection: close~n~n",[]),
 			  io_lib:format("<tasks user=\"~s\">~n~s</tasks>",[User,cerebellum_db:fetch_tasks_xml(User,["public"])]))
     end.
-    
+
+get_header(Headers,FieldName) ->
+    [{http_header,_,_,_,Value] = lists:filter(fun(Header) ->
+						      {http_header,_,HttpField,_,_} = Header,
+						      HttpField == FieldName
+					      end,
+					      Headers),
+     Value.
+
 get_request({{http_request, 'GET',{abs_path, "/"},Version},Headers,[]}) ->
     %% don't know what this should return, probably something
     %% like own&friends' tasks
@@ -72,7 +80,7 @@ put_request({{http_request, 'PUT',{abs_path, "/sessions/"},Version},Headers,Data
 put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
     ["",User,TaskID] = re:split(Path,"/",[{return,list}]),
     case catch parser:task_xml(Data) of
-	{task,_,UserID,Name,Mode,State} -> %% data parsed ok
+	{task,_,_,Name,Mode,State} -> %% data parsed ok
 	    cerebellum_db:write_task(TaskID,UserID,Name,Mode,State);
 	{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
     end.
