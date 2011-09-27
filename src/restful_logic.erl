@@ -125,28 +125,39 @@ Set-Cookie: Session=~s~n~n<session>~s</session>",
     end;
 post_request({{http_request, 'POST',{abs_path, Path},Version},Headers,Data}) -> %%new task
     ["",User,Parent] = re:split(Path,"/",[{return,list}]),
-    Task = parser:task_xml(Data),
-    TaskID = cerebellum_db:next_id(task),
-    case
-	catch cerebellum_db:write_task(
-		TaskID,
-		cerebellum_db:user_id(User),
-		Task#task.name,
-		Task#task.mode,
-		Task#task.state)
-    of
-	{atomic, ok} -> %%no error
-	    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
-					 [TaskID,
-					  util:utf8(Task#task.mode),
-					  util:utf8(Task#task.state),
-					  util:utf8(Task#task.name)]),
-	    string:concat(io_lib:format(
-			    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
-			    [length(ResponseData)*4]),
-			  ResponseData);
-	_ -> %%some error
-	    "HTTP/1.1 500 Internal Server Error"
+    ["Session",SessionID] = re:split(get_header(Headers,"Cookie"),"=",[{return,list}]),
+    case catch cerebellum_db:fetch_session(SessionID) of
+	{'EXIT',_} -> %% Session not found
+	    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+	Session -> %% Session found
+	    case cerebellum_db:user_id(User) == Session#session.user_id of
+		true ->
+		    Task = parser:task_xml(Data),
+		    TaskID = cerebellum_db:next_id(task),
+		    case
+			catch cerebellum_db:write_task(
+				TaskID,
+				cerebellum_db:user_id(User),
+				Task#task.name,
+				Task#task.mode,
+				Task#task.state)
+		    of
+			{atomic, ok} -> %%no error
+			    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
+							 [TaskID,
+							  util:utf8(Task#task.mode),
+							  util:utf8(Task#task.state),
+							  util:utf8(Task#task.name)]),
+			    string:concat(io_lib:format(
+					    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
+					    [length(ResponseData)*4]),
+					  ResponseData);
+			_ -> %%some error
+			    "HTTP/1.1 500 Internal Server Error"
+		    end;
+		false ->
+		    io_lib:format("HTTP/1.1 403 Forbidden~n~n")
+	    end
     end.
 
 delete_request({{http_request, 'DELETE',{abs_path, Path},Version},Headers,[]}) ->
