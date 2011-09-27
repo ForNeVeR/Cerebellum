@@ -33,7 +33,7 @@ get_tasks(Session,User) ->
     end.
 
 get_header(Headers,FieldName) ->
-    [{http_header,_,_,_,Value] = lists:filter(fun(Header) ->
+    [{http_header,_,_,_,Value}] = lists:filter(fun(Header) ->
 						      {http_header,_,HttpField,_,_} = Header,
 						      HttpField == FieldName
 					      end,
@@ -53,13 +53,7 @@ get_request({{http_request, 'GET',{abs_path, Path},Version},Headers,[]}) ->
 	{'EXIT',_} -> %% user not found
 	    io_lib:format("HTTP/1.1 404 Not Found~n~n");
 	_ -> %% user found
-	    [Cookie] = lists:filter(fun(Header) ->
-					    {http_header,_,HttpField,_,_} = Header,
-					    HttpField == "Cookie"
-				    end,
-				    Headers),
-	    {http_header,_,_,_,CookieValue} = Cookie,
-	    ["Session=",SessionID] = re:split(CookieValue,"=",[{return,list}]),
+	    ["Session",SessionID] = re:split(get_header(Headers,"Cookie"),"=",[{return,list}]),
 	    case catch cerebellum_db:fetch_session(SessionID) of
 		{'EXIT',_} -> %% Session not found
 		    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
@@ -79,10 +73,21 @@ put_request({{http_request, 'PUT',{abs_path, "/sessions/"},Version},Headers,Data
     io_lib:format("HTTP/1.1 403 Forbidden~n~n");
 put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
     ["",User,TaskID] = re:split(Path,"/",[{return,list}]),
-    case catch parser:task_xml(Data) of
-	{task,_,_,Name,Mode,State} -> %% data parsed ok
-	    cerebellum_db:write_task(TaskID,UserID,Name,Mode,State);
-	{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
+    ["Session",SessionID] = re:split(get_header(Headers,"Cookie"),"=",[{return,list}]),
+    case catch cerebellum_db:fetch_session(SessionID) of
+	{'EXIT',_} -> %% Session not found
+	    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+	Session -> %% Session found
+	    case cerebellum_db:user_id(User) == Session#session.user_id of
+		true ->
+		    case catch parser:task_xml(Data) of
+			{task,_,_,Name,Mode,State} -> %% data parsed ok
+			    cerebellum_db:write_task(TaskID,Session#session.user_id,Name,Mode,State);
+			{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
+		    end;
+		false ->
+		    io_lib:format("HTTP/1.1 403 Forbidden~n~n")
+	    end
     end.
 
 post_request({{http_request, 'POST',{abs_path, "/"},Version},Headers,Data}) -> %%add new user
