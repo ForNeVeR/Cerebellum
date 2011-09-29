@@ -33,12 +33,38 @@ get_tasks(Session,User) ->
     end.
 
 get_header(Headers,FieldName) ->
-    [{http_header,_,_,_,Value}] = lists:filter(fun(Header) ->
-						      {http_header,_,HttpField,_,_} = Header,
-						      HttpField == FieldName
-					      end,
-					      Headers),
-     Value.
+    case lists:filter(fun(Header) ->
+			      {http_header,_,HttpField,_,_} = Header,
+			      HttpField == FieldName
+		      end,
+		      Headers) of
+	[{http_header,_,_,_,Value}] ->
+	    Value;
+	_ -> []
+    end.
+
+with_session(User,Headers,Action) ->
+    case re:split(get_header(Headers,"Cookie"),"=",[{return,list}]) of
+	[[]] -> io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+	["Session",SessionID] ->
+	    case catch cerebellum_db:fetch_session(SessionID) of
+		{'EXIT',_} -> %% Session not found
+		    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
+		Session -> %% Session found
+		    case catch cerebellum_db:user_id(User) of
+			{'EXIT',_} -> %% user not found
+			    io_lib:format("HTTP/1.1 404 Not Found~n~n");
+			UserID ->
+			    case UserID == Session#session.user_id of
+				true ->
+				    Action();
+				false ->
+				    io_lib:format("HTTP/1.1 403 Forbidden~n~n")
+			    end
+		    end
+	    end;
+	_ -> io_lib:format("HTTP/1.1 403 Forbidden~n~n") %% may be this should return "bad request" or something like it
+    end.
 
 get_request({{http_request, 'GET',{abs_path, "/"},Version},Headers,[]}) ->
     %% don't know what this should return, probably something
