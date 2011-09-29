@@ -99,31 +99,27 @@ put_request({{http_request, 'PUT',{abs_path, "/sessions/"},Version},Headers,Data
     io_lib:format("HTTP/1.1 403 Forbidden~n~n");
 put_request({{http_request, 'PUT',{abs_path, Path},Version},Headers,Data}) ->
     ["",User,TaskID] = re:split(Path,"/",[{return,list}]),
-    ["Session",SessionID] = re:split(get_header(Headers,"Cookie"),"=",[{return,list}]),
-    case catch cerebellum_db:fetch_session(SessionID) of
-	{'EXIT',_} -> %% Session not found
-	    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
-	Session -> %% Session found
-	    case cerebellum_db:user_id(User) == Session#session.user_id of
-		true ->
-		    case catch parser:task_xml(Data) of
-			{task,_,_,Name,Mode,State} -> %% data parsed ok
-			    cerebellum_db:write_task(TaskID,Session#session.user_id,Name,Mode,State),
-			    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
-							 [TaskID,
-							  Mode,
-							  State,
-							  Name]),
-			    string:concat(io_lib:format(
-					    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
-					    [length(ResponseData)*4]),
-					  ResponseData);
-			{'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
-		    end;
-		false ->
-		    io_lib:format("HTTP/1.1 403 Forbidden~n~n")
-	    end
-    end.
+    
+    with_session(User,Headers,
+		 fun()->
+			 case catch parser:task_xml(Data) of
+			     {task,_,_,Name,Mode,State} -> %% data parsed ok
+				 %% here we don't care if user is nonexistent, with_session would handle that
+				 UserID = cerebellum_db:user_id(User),
+				 cerebellum_db:write_task(TaskID,UserID,Name,Mode,State),
+				 ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
+							      [TaskID,
+							       Mode,
+							       State,
+							       Name]),
+				 string:concat(io_lib:format(
+						 "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
+						 [length(ResponseData)*4]),
+					       ResponseData);
+			     {'EXIT',_} -> io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% could not parse
+			 end
+
+		 end).
 
 post_request({{http_request, 'POST',{abs_path, "/"},Version},Headers,Data}) -> %%add new user
     %% Same data syntax as auth
@@ -151,40 +147,32 @@ Set-Cookie: Session=~s~n~n<session>~s</session>",
     end;
 post_request({{http_request, 'POST',{abs_path, Path},Version},Headers,Data}) -> %%new task
     ["",User,Parent] = re:split(Path,"/",[{return,list}]),
-    ["Session",SessionID] = re:split(get_header(Headers,"Cookie"),"=",[{return,list}]),
-    case catch cerebellum_db:fetch_session(SessionID) of
-	{'EXIT',_} -> %% Session not found
-	    io_lib:format("HTTP/1.1 403 Forbidden~n~n");
-	Session -> %% Session found
-	    case cerebellum_db:user_id(User) == Session#session.user_id of
-		true ->
-		    Task = parser:task_xml(Data),
-		    TaskID = cerebellum_db:next_id(task),
-		    case
-			catch cerebellum_db:write_task(
-				TaskID,
-				cerebellum_db:user_id(User),
-				Task#task.name,
-				Task#task.mode,
-				Task#task.state)
-		    of
-			{atomic, ok} -> %%no error
-			    ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
-							 [TaskID,
-							  util:utf8(Task#task.mode),
-							  util:utf8(Task#task.state),
-							  util:utf8(Task#task.name)]),
-			    string:concat(io_lib:format(
-					    "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
-					    [length(ResponseData)*4]),
-					  ResponseData);
-			_ -> %%some error
-			    "HTTP/1.1 500 Internal Server Error"
-		    end;
-		false ->
-		    io_lib:format("HTTP/1.1 403 Forbidden~n~n")
-	    end
-    end.
+    with_session(User,Headers,
+		 fun() ->
+			 Task = parser:task_xml(Data),
+			 TaskID = cerebellum_db:next_id(task),
+			 case
+			     catch cerebellum_db:write_task(
+				     TaskID,
+				     cerebellum_db:user_id(User),
+				     Task#task.name,
+				     Task#task.mode,
+				     Task#task.state)
+			 of
+			     {atomic, ok} -> %%no error
+				 ResponseData = io_lib:format("<task id=\"~s\" mode=\"~s\" state=\"~s\" name=\"~s\" />",
+							      [TaskID,
+							       util:utf8(Task#task.mode),
+							       util:utf8(Task#task.state),
+							       util:utf8(Task#task.name)]),
+				 string:concat(io_lib:format(
+						 "HTTP/1.1 200 OK~nContent-Length: ~b~nContent-Type: text/xml~nConnection: close~n~n",
+						 [length(ResponseData)*4]),
+					       ResponseData);
+			     _ -> %%some error
+				 "HTTP/1.1 500 Internal Server Error"
+			 end
+		 end).
 
 delete_request({{http_request, 'DELETE',{abs_path, Path},Version},Headers,[]}) ->
     %% TODO Implement this
