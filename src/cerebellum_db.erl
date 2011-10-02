@@ -20,7 +20,7 @@
 
 -module(cerebellum_db).
 -export([start/0, init_schema/0, testdata/0, fetch_tasks_xml/2, write_user/3, write_task/5,
-	next_id/1, user_id/1]).
+	next_id/1, user_id/1, create_session/2, fetch_session/1]).
 -include_lib("stdlib/include/qlc.hrl").
 -include("../include/cerebellum_db.hrl").
 
@@ -42,10 +42,14 @@ init_schema() ->
 			[{attributes, record_info(fields,sequence)}]).
 
 user_id(UserName)-> %%returns id# of user with given name
-    {atomic,User} =
-	mnesia:transaction(fun() ->
-				   qlc:e(qlc:q([U || U <-mnesia:table(user), U#user.name == UserName])) end),
-    (hd(User))#user.user_id.
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([U || U <-mnesia:table(user), U#user.name == UserName]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[User]} -> 
+		 User#user.user_id
+	 end.
 
 next_id(Table) -> %% returns next free id for given table
     {atomic, ID} = mnesia:transaction(
@@ -115,4 +119,31 @@ testdata()->
     write_task(next_id(task),TestUserID,"Вкурить эрланга","public","done"),
     write_task(next_id(task),TestUserID,"Показать микелю протокол","protected","todo"),
     write_task(next_id(task),TestUserID,"Забухать","private","todo").
-    
+
+create_session(UserName,Password) ->
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([U || U <-mnesia:table(user),
+							    U#user.name == UserName,
+							    U#user.password_hash == crypto:sha(list_to_binary(Password))]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[User]} -> 
+		 SessionID = [lists:nth(random:uniform(16),"1234567890ABCDEF") || _ <- lists:seq(1,16)],
+		 Session = #session{session_id = SessionID,
+				    user_id = User#user.user_id},
+		 mnesia:transaction(fun() ->
+					   mnesia:write(Session)
+				   end),
+		 Session    
+	 end.
+
+fetch_session(SessionID)-> %%returns id# of user with given name
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([S || S <-mnesia:table(session), S#session.session_id == SessionID]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[Session]} -> 
+		 Session
+	 end.
