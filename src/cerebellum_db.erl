@@ -39,7 +39,13 @@ init_schema() ->
     mnesia:create_table(session,
 			[{attributes, record_info(fields,session)}]),
     mnesia:create_table(sequence,
-			[{attributes, record_info(fields,sequence)}]).
+			[{attributes, record_info(fields,sequence)}]),
+    mnesia:change_table_copy_type(schema, node(), disc_copies),
+    mnesia:change_table_copy_type(user, node(), disc_copies),
+    mnesia:change_table_copy_type(task, node(), disc_copies),
+    mnesia:change_table_copy_type(friend, node(), disc_copies),
+    mnesia:change_table_copy_type(session, node(), disc_copies),
+    mnesia:change_table_copy_type(sequence, node(), disc_copies).
 
 user_id(UserName)-> %%returns id# of user with given name
     case catch mnesia:transaction(fun() ->
