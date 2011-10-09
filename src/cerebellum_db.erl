@@ -153,3 +153,14 @@ fetch_session(SessionID)-> %%returns id# of user with given name
 	       {atomic,[Session]} -> 
 		 Session
 	 end.
+
+fetch_task(TaskID) -> %% returns task with given ID#
+    case catch mnesia:transaction(fun() ->
+					  qlc:e(qlc:q([T || T <- mnesia:table(task),
+							    S#task.task_id == TaskID]))
+				  end) of
+	       {atomic,[]} -> %% not found
+		 exit({error,notfound});
+	       {atomic,[Task]} -> 
+		 Task
+	 end.
