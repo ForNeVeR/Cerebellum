@@ -175,8 +175,26 @@ post_request({{http_request, 'POST',{abs_path, Path},Version},Headers,Data}) -> 
 		 end).
 
 delete_request({{http_request, 'DELETE',{abs_path, Path},Version},Headers,[]}) ->
-    %% TODO Implement this
-    io_lib:format("HTTP/1.1 501 Not Implemented~n~n");
+    ["",User,TaskIDString] = re:split(Path,"/",[{return,list}]),
+    with_session(User,Headers,
+		 fun() ->
+			 case string:to_integer(TaskIDString) of
+			     {TaskID, []} -> %% all data was parsed
+				 Task = cerebellum_db:fetch_task(TaskID), %% reading task from db to ensure that user owns it
+				 UserID = cerebellum_db:fetch_user(User),
+				 case Task#task.user_id == UserID of
+				     true -> %% yes, the user is logged in and is the owner
+					 case catch mnesia:delete({task, TaskID}) of %% NOTE maybe write a function for that in cerebellum_db
+					     {atomic,ok} ->
+						 io_lib:format("HTTP/1.1 200 OK~nConnection: close~n~n");
+					     {'EXIT',_} -> %% failed
+						 io_lib:format("HTTP/1.1 500 Internal Server Error~n~n") %% that's most probable cause of failure
+					 end;
+				     false -> %% foo, user is trying to delete someone other's task
+					 io_lib:format("HTTP/1.1 403 Forbidden~n~n")
+				 end
+			 end
+		 end);
 delete_request({{http_request, 'DELETE',{abs_path, Path},Version},Headers,Data}) ->
     %% this should never ever be matched. but, just in case...
     io_lib:format("HTTP/1.1 500 Internal Server Error~n~n").
