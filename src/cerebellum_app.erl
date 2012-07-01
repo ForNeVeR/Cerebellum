@@ -18,20 +18,11 @@
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
 -module(cerebellum_app).
--export([start/0, stop/0]).
 
 -include("log.hrl").
 
 -behavior(application).
 -export([start/2, start_phase/2, prep_stop/1, stop/1, config_change/3]).
-
-%% === Public functions ===
-
-start() ->
-    application:start(cerebellum).
-
-stop() ->
-    application:stop(cerebellum).
 
 %% === application behavior ===
 
