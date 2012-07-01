@@ -3,3 +3,4 @@ ebin/*.beam
 *.log # mnesia crap
 *.dat # mnesia crap
 /.settings/
+/.project
