@@ -19,34 +19,30 @@
 %% THE SOFTWARE.
 -module(cerebellum_app).
 
+-behavior(application).
+
+%% --------------------------------------------------------------------
+%% Includes
+%% --------------------------------------------------------------------
 -include("log.hrl").
 
--behavior(application).
--export([start/2, start_phase/2, prep_stop/1, stop/1, config_change/3]).
+%% --------------------------------------------------------------------
+%% Behavior exports
+%% --------------------------------------------------------------------
+-export([start/2,
+         stop/1]).
 
-%% === application behavior ===
-
-start(normal, Args) ->
-    ?LOG("cerebellum:start(normal, ~p)~n", [Args]),
-    {ok, PID} = cerebellum_server:start_link(),
-    Config = cerebellum_config:read("../config.yaml"),
-    Adapters = cerebellum_config:adapters(Config),
-    lists:map(fun (Adapter) -> cerebellum_server:start_adapter(PID, Adapter) end, Adapters),
-    State = [PID],
-    {ok, PID, State}.
-
-start_phase(_, _) ->
-    {error, not_implemented}.
-
-prep_stop(State=[PID]) ->
-    ?LOG("cerebellum:prep_stop(~p)~n", [State]),
-    ok = cerebellum_server:stop(PID),
-    State.
+%% ====================================================================
+%% Behavior functions
+%% ====================================================================
+start(normal, _Args) ->
+    case cerebellum_sup:start_link() of
+        {ok, Pid} ->
+            {ok, Pid};
+        Other ->
+            {error, Other}
+    end.
 
 stop(State) ->
     ?LOG("cerebellum:stop(~p)~n", [State]),
-    ok.
-
-config_change(Changed, New, Removed) ->
-    ?LOG("cerebellum:config_change(~p, ~p, ~p)~n", [Changed, New, Removed]),
     ok.
