@@ -1,4 +1,4 @@
-%% Copyright (C) 2011 by ForNeVeR
+%% Copyright (C) 2011-2012 by ForNeVeR
 %% 
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -17,7 +17,7 @@
 %% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
--module(cerebellum).
+-module(cerebellum_app).
 -export([start/0, stop/0]).
 
 -include("log.hrl").

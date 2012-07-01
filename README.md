@@ -1,10 +1,11 @@
-﻿Cerebellum
+Cerebellum
 ==========
 
 About
 =====
 Cerebellum is simple server for sharing various kinds of data between various
-clients. Main focus made on to-do lists integrated with emacs org-mode files.
+clients. Main focus will be made on to-do lists integrated with emacs org-mode
+files.
 
 Building
 ========
@@ -17,19 +18,20 @@ Usage
 =====
 ### Starting server
 
-First, run Erlang console from the ebin directory:
+First, start Erlang shell:
 
-    $ cd ebin && erl
+	$ cd Cerebellum
+    $ erl -pa ebin
 
 Then start cerebellum application:
 
-    1> cerebellum:start().
+    1> application:start(cerebellum).
 
 ### Stopping server
 
-Use the following function call:
+Use the standard function call:
 
-    2> cerebellum:stop().
+    2> application:stop(cerebellum).
 
 This will stop the whole application.
 
