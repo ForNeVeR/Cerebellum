@@ -22,11 +22,6 @@
 -behavior(application).
 
 %% --------------------------------------------------------------------
-%% Includes
-%% --------------------------------------------------------------------
--include("log.hrl").
-
-%% --------------------------------------------------------------------
 %% Behavior exports
 %% --------------------------------------------------------------------
 -export([start/2,
@@ -36,6 +31,10 @@
 %% Behavior functions
 %% ====================================================================
 start(normal, _Args) ->
+    % Start database module:
+    ok = cerebellum_db:start(),
+    
+    % Start application:
     case cerebellum_sup:start_link() of
         {ok, Pid} ->
             {ok, Pid};
@@ -43,6 +42,5 @@ start(normal, _Args) ->
             {error, Other}
     end.
 
-stop(State) ->
-    ?LOG("cerebellum:stop(~p)~n", [State]),
+stop(_State) ->
     ok.
