@@ -33,7 +33,7 @@ Use the standard function call:
 
     2> application:stop(cerebellum).
 
-This will stop the whole application.
+This will hopefully stop the whole application.
 
 Configuration
 =============
