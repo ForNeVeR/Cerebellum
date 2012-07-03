@@ -1,4 +1,4 @@
-%% Copyright (C) 2011 by ForNeVeR
+%% Copyright (C) 2011-2012 by ForNeVeR
 %% 
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -18,60 +18,59 @@
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 %% THE SOFTWARE.
 -module(cerebellum_server).
--export([start_link/0, stop/1, start_adapter/2]).
+-export([start_link/1, stop/0]).
 
 -behavior(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2,
 	 code_change/3]).
 
--include("log.hrl").
+-record(state, {clients = []}).
+
+-define(SERVER, ?MODULE).
 
 %% == Public functions ==
 
-start_link() ->
-    ?LOG("cerebellum_server:start_link()~n"),
-    gen_server:start_link(?MODULE, [], []).
+start_link(_Config) ->
+    gen_server:start_link({local, ?SERVER}, [], []).
 
-stop(PID) ->
-    ?LOG("cerebellum_server:stop(~p)~n", [PID]),
-    gen_server:call(PID, stop).
+stop() ->
+    gen_server:cast(?SERVER, stop).
 
-start_adapter(PID, Adapter) ->
-    application:start(Adapter).
+register_client(PID) ->
+    gen_server:cast(?SERVER, {register_client, PID}).
+
+get_tasks(UserID) ->
+    gen_server:call(?SERVER, {get_tasks, UserID}).
 
 %% == gen_server behavior ==
 
-init(Args) ->
-    ?LOG("cerebellum_server:init(~p)~n", [Args]),
-    State = [],
+init(_Args) ->
+    State = #state{},
     {ok, State}.
 
 handle_call(stop, From, State) ->
-    ?LOG("cerebellum_server:handle_call(stop, ~p, ~p)~n", [From, State]),
     {stop, normal, ok, State};
-handle_call(Request, From, State) ->
-    ?LOG("cerebellum_server:handle_call(~p, ~p, ~p)~n", [Request, From, State]),
-    {noreply, State}.
+handle_call({get_tasks, UserID}, From, State) ->
+    Reply = cerebellum_db:fetch_tasks(UserID, []),
+    {reply, Reply, State}.
 
-handle_cast(Request, State) ->
-    ?LOG("cerebellum_server:handle_cast(~p, ~p)~n", [Request, State]),
-    NewState = handle_message(State, Request),
+handle_cast(stop, State) ->
+    {stop, normal, State};
+handle_cast({register_client, PID}, State) ->
+    Clients = State#state.clients,
+    NewState = State#state{clients = [PID | Clients]},
     {noreply, NewState}.
 
 handle_info(Info, State) ->
-    ?LOG("cerebellum_server:handle_info(~p, ~p)~n", [Info, State]),
     {noreply, State}.
 
 terminate(Reason, State) ->
-    ?LOG("cerebellum_server:terminate(~p, ~p)~n", [Reason, State]),
     ok.
 
 code_change(OldVsn, State, Extra) ->
-    ?LOG("cerebellum_server:code_change(~p, ~p, ~p)~n", [OldVsn, State, Extra]),
     {ok, State}.
 
 %% == Private functions ==
 
 handle_message(State, Request) ->
-    ?LOG("cerebellum_server:handle_message(~p, ~p)~n", [State, Request]),
     State.
