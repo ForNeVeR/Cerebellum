@@ -1,4 +1,4 @@
-%% Copyright (C) 2011 by Hagane
+%% Copyright (C) 2011 by Hagane, 2012 by ForNeVeR
 %% 
 %% Permission is hereby granted, free of charge, to any person obtaining a copy
 %% of this software and associated documentation files (the "Software"), to deal
@@ -95,6 +95,14 @@ write_task(TaskID,UserID,TaskName,Mode,State) -> %% writes new or updates existi
 	    end,
     mnesia:transaction(Trans).
 
+fetch_tasks(UserID) ->
+    {atomic,Tasks} = mnesia:transaction(
+                       fun() ->
+                               qlc:e(qlc:q([T || T <-mnesia:table(task),
+                                                 T#task.user_id == UserID]))
+                       end),
+    Tasks.
+
 fetch_tasks_xml(UserName,Modes) -> 
     %% returns XML representation of user's tasks
     %% UserName -- obv
@@ -104,11 +112,7 @@ fetch_tasks_xml(UserName,Modes) ->
     %%      that takes records, and produces XML, YAML, S-Exp,
     %%      or even Brainfuck program representing these records.
     UserID = user_id(UserName),
-    {atomic,Tasks} = mnesia:transaction(
-		       fun() ->
-			       qlc:e(qlc:q([T || T <-mnesia:table(task),
-						 T#task.user_id == UserID]))
-		       end),
+    Tasks = fetch_tasks(UserID),
     TasksXML = lists:map(
 		 fun(Task)->
 			 io_lib:format("<task handle=\"~w\" mode=\"~s\" state=\"~s\" name=\"~s\" />~n",
@@ -157,7 +161,7 @@ fetch_session(SessionID)-> %%returns id# of user with given name
 fetch_task(TaskID) -> %% returns task with given ID#
     case catch mnesia:transaction(fun() ->
 					  qlc:e(qlc:q([T || T <- mnesia:table(task),
-							    S#task.task_id == TaskID]))
+							    T#task.task_id == TaskID]))
 				  end) of
 	       {atomic,[]} -> %% not found
 		 exit({error,notfound});
