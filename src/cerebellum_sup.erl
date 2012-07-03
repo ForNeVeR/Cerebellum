@@ -39,14 +39,14 @@
 %% --------------------------------------------------------------------
 %% Records
 %% --------------------------------------------------------------------
--record(config, {adapters = []}).
+-record(config, {adapters = [],
+                 modules = dict:new()}).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-
 
 %% ====================================================================
 %% Behavior functions
@@ -68,11 +68,13 @@ init([]) ->
 %% ====================================================================
 get_config() ->
     % TODO: Read real config.
-    #config{adapters = [cerebellum_db,
-                        cerebellum_restful]}.
+    #config{adapters = [cerebellum_restful],
+            modules = dict:from_list([{cerebellum_restful, []}])}.
 
-get_adapters(#config{adapters = Adapters}) ->
+get_adapters(#config{adapters = Adapters,
+                     modules = Modules}) ->
     lists:map(fun(Adapter) ->
-                  {Adapter, {Adapter, start_link, []},
+                  ModuleConfig = dict:fetch(Adapter, Modules),
+                  {Adapter, {Adapter, start_link, ModuleConfig},
                    permanent, 2000, worker, [Adapter]}
               end, Adapters).
