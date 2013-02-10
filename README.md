@@ -4,15 +4,13 @@ Cerebellum
 About
 =====
 Cerebellum is simple server for sharing various kinds of data between various
-clients. Main focus will be made on to-do lists integrated with emacs org-mode
-files.
+clients. Main focus will be made on to-do lists.
 
 Building
 ========
-To build current version of source code, execute following commands:
+To build current version of source code, use `rebar`:
 
-    $ cd Cerebellum
-    $ erl -make
+    $ rebar compile
 
 Usage
 =====
@@ -20,7 +18,7 @@ Usage
 
 First, start Erlang shell:
 
-	$ cd Cerebellum
+    $ cd Cerebellum
     $ erl -pa ebin
 
 Then start cerebellum application:
