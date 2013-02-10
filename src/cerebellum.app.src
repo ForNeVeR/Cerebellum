@@ -1,0 +1,14 @@
+{application, cerebellum,
+ [
+  {description, "cerebellum server"},
+  {modules, [cerebellum_app,
+	     cerebellum_server]},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { cerebellum_app, []}},
+  {env, []}
+ ]}.
